@@ -4,6 +4,7 @@ const DefaultView = require('@test-runner/default-view')
 class OnelineView extends DefaultView {
   constructor (options) {
     super(options)
+    this.options.viewShowStarts = true
     this.firstLine = true
     this.fails = []
   }
