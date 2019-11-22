@@ -69,6 +69,10 @@ class OnelineView extends DefaultView {
       console.log(this.fails.join('\n'))
     }
   }
+
+  static optionDefinitions () {
+    return []
+  }
 }
 
 module.exports = OnelineView
