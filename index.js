@@ -30,8 +30,10 @@ class OnelineView extends DefaultView {
     const failColour = stats.fail > 0 ? 'red' : 'white'
     const passColour = stats.pass > 0 ? 'green' : 'white'
     const skipColour = stats.skip > 0 ? 'grey' : 'white'
-    const s = ansi.format(`Pass: [${passColour}]{${stats.pass}}, fail: [${failColour}]{${stats.fail}}, skip: [${skipColour}]{${stats.skip}}.`)
-    console.log(s, toDisplay + ' '.repeat(paddingRequired), ansi.style.reset)
+    const todoColour = stats.todo > 0 ? 'grey' : 'white'
+    const inProgressColour = stats.inProgress > 0 ? 'rgb(255,191,0)' : 'white'
+    const statsSummary = ansi.format(`In-progress: [${inProgressColour}]{${stats.inProgress}}, pass: [${passColour}]{${stats.pass}}, fail: [${failColour}]{${stats.fail}}, skip: [${skipColour}]{${stats.skip}}, todo: [${skipColour}]{${stats.todo}}.`)
+    console.log(statsSummary, ansi.format(toDisplay) + ' '.repeat(paddingRequired), ansi.style.reset)
     this.firstLine = false
   }
 
