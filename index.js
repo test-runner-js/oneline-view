@@ -1,51 +1,81 @@
 const ansi = require('ansi-escape-sequences')
 const DefaultView = require('@test-runner/default-view')
 
+/**
+ * Encapsulates how strings are styled, if at all.
+ */
+class StyledString {
+  constructor (str, colour) {
+    this.str = str
+    this.colour = colour
+  }
+  toString () {
+    if (this.colour) {
+      return ansi.format(this.str, this.colour)
+    } else {
+      return this.str
+    }
+  }
+}
+
 class OnelineView extends DefaultView {
   constructor (options) {
     super(options)
     this.options.viewShowStarts = true
     this.firstLine = true
     this.fails = []
+    this.contextDatas = []
   }
 
   start () {
+    /* suppress start output */
   }
 
-  log (...args) {
-    const msgSize = process.stdout.columns - 30
-    const msg = args.join(' ')
-    const stringLength = require('string-length')
-    if (!this.firstLine) {
-      process.stdout.write(ansi.cursor.up(1) + ansi.erase.inLine(2))
+  testStart (test) {
+    if (this.options.viewShowStarts) {
+      const th = this.theme
+      const parent = this.getParent(test)
+      this.log(
+        new StyledString('∙ ', th.groupDark),
+        new StyledString(parent, th.groupDark),
+        new StyledString(test.name, th.testDark),
+      )
     }
-    let toDisplay = msg.substr(0, msgSize)
-    let msgLen = stringLength(toDisplay)
-    let paddingRequired = msgSize - msgLen
-    toDisplay = msg.substr(0, msgSize + paddingRequired)
-    msgLen = stringLength(toDisplay)
-    paddingRequired = msgSize - msgLen
+  }
 
-    const stats = this.runner.stats
-    const failColour = stats.fail > 0 ? 'red' : 'white'
-    const passColour = stats.pass > 0 ? 'green' : 'white'
-    const skipColour = stats.skip > 0 ? 'grey' : 'white'
-    const todoColour = stats.todo > 0 ? 'grey' : 'white'
-    const inProgressColour = stats.inProgress > 0 ? 'rgb(255,191,0)' : 'white'
-    const statsSummary = ansi.format(`In-progress: [${inProgressColour}]{${stats.inProgress}}, pass: [${passColour}]{${stats.pass}}, fail: [${failColour}]{${stats.fail}}, skip: [${skipColour}]{${stats.skip}}, todo: [${skipColour}]{${stats.todo}}.`)
-    console.log(statsSummary, ansi.format(toDisplay) + ' '.repeat(paddingRequired), ansi.style.reset)
-    this.firstLine = false
+  testPass (test) {
+    const th = this.theme
+    const parent = this.getParent(test)
+    const result = test.result === undefined ? '' : ` [${test.result}]`
+    const duration = test.stats.duration.toFixed(1) + 'ms'
+    this.log(
+      new StyledString('✓ ', th.pass),
+      new StyledString(parent, th.group),
+      new StyledString(test.name),
+      new StyledString(result)
+    )
+    if (test.context.data) {
+      this.contextData(test)
+    }
+  }
+
+  contextData (test) {
+    this.contextDatas.push(test)
   }
 
   testFail (test, err) {
-    const indent = ' '.repeat(test.level())
-    const parent = test.parent ? test.parent.name : ''
-    this.fails.push(ansi.format(`${indent}[red]{⨯} [magenta]{${parent}} ${test.name}`))
+    const parent = this.getParent(test)
+    const strParts = [
+      new StyledString('⨯ ', this.theme.fail),
+      new StyledString(parent, this.theme.group),
+      new StyledString(test.name)
+    ]
+    this.log(...strParts)
+    this.fails.push(strParts.join(''))
     const lines = this.getErrorMessage(err).split('\n').map(line => {
-      const indent = ' '.repeat(test.level() + 2)
-      return indent + line
+      return '  ' + line
     })
-    this.fails.push(ansi.format(`\n${lines.join('\n').trimEnd()}\n`))
+    this.fails.push('', ...lines, '')
   }
 
   getErrorMessage (err) {
@@ -53,6 +83,30 @@ class OnelineView extends DefaultView {
       return err.message
     } else {
       return err.stack
+    }
+  }
+
+  testSkip (test) {
+    if (!this.options.viewHideSkips) {
+      const th = this.theme
+      const parent = this.getParent(test)
+      this.log(
+        new StyledString('- ', th.skip),
+        new StyledString(parent, th.skip),
+        new StyledString(test.name, th.skip)
+      )
+    }
+  }
+
+  testTodo (test) {
+    if (!this.options.viewHideSkips) {
+      const th = this.theme
+      const parent = this.getParent(test);
+      this.log(
+        new StyledString('- ', th.todo),
+        new StyledString(parent, th.todo),
+        new StyledString(test.name, th.todo)
+      )
     }
   }
 
@@ -65,11 +119,64 @@ class OnelineView extends DefaultView {
    * @params {object} stats.end
    */
   end (stats) {
-    this.log(ansi.format(`Completed in ${stats.timeElapsed()}ms.`))
+    this.log(new StyledString(`Completed in ${stats.timeElapsed()}ms.`))
     if (this.fails.length) {
       console.log()
       console.log(this.fails.join('\n'))
     }
+    if (this.contextDatas.length) {
+      if (typeof window === 'undefined') {
+        for (const test of this.contextDatas) {
+          const str = this.inspect(test.context.data)
+          const data = str
+          console.log(`Context data: ${test.name}`)
+          console.log(`${data.trimEnd()}\n`)
+        }
+      }
+    }
+  }
+
+  log (...args) {
+    if (!this.firstLine) {
+      process.stdout.write(ansi.cursor.up(1) + ansi.erase.inLine(2))
+    }
+    const th = this.theme
+    const stringLength = require('string-length')
+
+    const stats = this.runner.stats
+    const colour = {
+      fail: stats.fail > 0 ? th.fail : th.plain,
+      pass: stats.pass > 0 ? th.pass : th.plain,
+      skip: stats.skip > 0 ? th.skip : th.plain,
+      todo: stats.todo > 0 ? th.todo : th.plain,
+      inProgress: stats.inProgress > 0 ? th.inProgress : th.plain,
+    }
+
+    const statsSummaryElements = []
+    statsSummaryElements.push(`In-progress: [${colour.inProgress}]{${stats.inProgress}}`)
+    statsSummaryElements.push(`pass: [${colour.pass}]{${stats.pass}}`)
+    statsSummaryElements.push(`fail: [${colour.fail}]{${stats.fail}}`)
+    if (stats.skip) {
+      statsSummaryElements.push(`skip: [${colour.skip}]{${stats.skip}}`)
+    }
+    if (stats.todo) {
+      statsSummaryElements.push(`todo: [${colour.todo}]{${stats.todo}}`)
+    }
+    const statsSummary = ansi.format(statsSummaryElements.join(', ')) + '. '
+    const formattedMsg = args.join('')
+    const unformattedMsg = args
+      .map(styledString => {
+        return new StyledString(styledString.str, null)
+      })
+      .join('')
+    const formattedLine = statsSummary + formattedMsg
+    if (stringLength(formattedLine) > process.stdout.columns) {
+      const spaceAvailable = process.stdout.columns - stringLength(statsSummary)
+      console.log(statsSummary + unformattedMsg.substr(0, spaceAvailable))
+    } else {
+      console.log(formattedLine)
+    }
+    this.firstLine = false
   }
 
   static optionDefinitions () {
