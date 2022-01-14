@@ -16,7 +16,7 @@
     "node": ">=12.17"
   },
   "scripts": {
-    "test": "test-runner test.js"
+    "test": "node test.js"
   },
   "files": [
     "index.js"
@@ -25,5 +25,8 @@
     "@test-runner/default-view": "^0.6.1",
     "ansi-escape-sequences": "^6.2.0",
     "string-length": "^5.0.1"
+  },
+  "devDependencies": {
+    "@test-runner/tom": "^0.9.0"
   }
 }

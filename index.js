@@ -1,5 +1,6 @@
 import ansi from 'ansi-escape-sequences'
 import DefaultView from '@test-runner/default-view'
+import stringLength from 'string-length'
 
 /**
  * Encapsulates how strings are styled, if at all.
@@ -141,9 +142,8 @@ class OnelineView extends DefaultView {
       process.stdout.write(ansi.cursor.up(1) + ansi.erase.inLine(2))
     }
     const th = this.theme
-    const stringLength = require('string-length')
 
-    const stats = this.runner.stats
+    const stats = this.runner ? this.runner.stats : {}
     const colour = {
       fail: stats.fail > 0 ? th.fail : th.plain,
       pass: stats.pass > 0 ? th.pass : th.plain,
