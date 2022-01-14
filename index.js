@@ -1,5 +1,5 @@
-const ansi = require('ansi-escape-sequences')
-const DefaultView = require('@test-runner/default-view')
+import ansi from 'ansi-escape-sequences'
+import DefaultView from '@test-runner/default-view'
 
 /**
  * Encapsulates how strings are styled, if at all.
@@ -184,4 +184,4 @@ class OnelineView extends DefaultView {
   }
 }
 
-module.exports = OnelineView
+export default OnelineView

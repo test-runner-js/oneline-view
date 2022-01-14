@@ -10,8 +10,10 @@
     "view"
   ],
   "license": "MIT",
+  "exports": "./index.js",
+  "type": "module",
   "engines": {
-    "node": ">=10"
+    "node": ">=12.17"
   },
   "scripts": {
     "test": "test-runner test.js"
@@ -20,8 +22,8 @@
     "index.js"
   ],
   "dependencies": {
-    "@test-runner/default-view": "^0.5.4",
-    "ansi-escape-sequences": "^5.1.2",
-    "string-length": "^3.1.0"
+    "@test-runner/default-view": "^0.6.1",
+    "ansi-escape-sequences": "^6.2.0",
+    "string-length": "^5.0.1"
   }
 }
